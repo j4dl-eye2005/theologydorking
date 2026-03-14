@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theology Google Dorking</title>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Share+Tech+Mono&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --parchment: #1a1208;
+    --gold: #c9a84c;
+    --gold-dim: #7a5f22;
+    --gold-bright: #f0c060;
+    --ink: #e8d9b0;
+    --ink-dim: #8a7a5a;
+    --red: #8b2020;
+    --green: #2a6b3a;
+    --glow: rgba(201,168,76,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--parchment);
+    color: var(--ink);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+    background-image:
+      radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.08) 0%, transparent 70%),
+      repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(201,168,76,0.02) 40px, rgba(201,168,76,0.02) 41px);
+  }
+
+  .page {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  header {
+    text-align: center;
+    padding: 2.5rem 0 2rem;
+    border-bottom: 1px solid var(--gold-dim);
+    margin-bottom: 2.5rem;
+    position: relative;
+  }
+
+  header::before, header::after {
+    content: '✦';
+    color: var(--gold-dim);
+    font-size: 1.2rem;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  header::before { left: 0; }
+  header::after { right: 0; }
+
+  .title {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.4rem, 4vw, 2.2rem);
+    color: var(--gold-bright);
+    letter-spacing: 0.12em;
+    text-shadow: 0 0 30px rgba(240,192,96,0.4);
+    line-height: 1.3;
+  }
+
+  .subtitle {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    color: var(--ink-dim);
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+  }
+
+  .intro {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    color: var(--ink-dim);
+    font-size: 0.9rem;
+    text-align: center;
+    margin-bottom: 2.5rem;
+    line-height: 1.7;
+  }
+
+  .section {
+    margin-bottom: 2.5rem;
+  }
+
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, var(--gold-dim), transparent);
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
+    gap: 1rem;
+  }
+
+  .card {
+    background: rgba(201,168,76,0.04);
+    border: 1px solid var(--gold-dim);
+    border-radius: 2px;
+    padding: 1.1rem 1.2rem;
+    position: relative;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .card:hover {
+    border-color: var(--gold);
+    background: rgba(201,168,76,0.09);
+  }
+
+  .card-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .command {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 2px;
+    padding: 0.55rem 0.8rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--gold-bright);
+    line-height: 1.5;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    word-break: break-all;
+    position: relative;
+    transition: color 0.15s;
+  }
+
+  .command:hover { color: #fff; }
+
+  .command .op {
+    color: #7ecfa4;
+  }
+  .command .val {
+    color: #f0c060;
+  }
+  .command .term {
+    color: #c0a0f0;
+  }
+  .command .site-op {
+    color: #7ab8f5;
+  }
+
+  .desc {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 0.82rem;
+    color: var(--ink-dim);
+    margin-top: 0.6rem;
+    line-height: 1.5;
+  }
+
+  .copy-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: transparent;
+    border: 1px solid var(--gold-dim);
+    color: var(--gold-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.62rem;
+    padding: 0.15rem 0.4rem;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    border-radius: 2px;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .copy-btn.copied { color: #7ecfa4; border-color: #7ecfa4; }
+
+  .tip-box {
+    border: 1px solid var(--gold-dim);
+    border-left: 3px solid var(--gold);
+    padding: 1rem 1.2rem;
+    margin-bottom: 2.5rem;
+    background: rgba(201,168,76,0.04);
+  }
+
+  .tip-box .tip-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+  }
+
+  .tip-box p {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 0.88rem;
+    color: var(--ink-dim);
+    line-height: 1.7;
+  }
+
+  .tip-box code {
+    font-family: 'Share Tech Mono', monospace;
+    font-style: normal;
+    font-size: 0.82rem;
+    color: var(--gold-bright);
+    background: rgba(0,0,0,0.3);
+    padding: 0.1rem 0.3rem;
+    border-radius: 2px;
+  }
+
+  .operators-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.6rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .op-pill {
+    border: 1px solid var(--gold-dim);
+    padding: 0.5rem 0.8rem;
+    text-align: center;
+    background: rgba(0,0,0,0.3);
+  }
+
+  .op-pill .op-name {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    color: #7ecfa4;
+  }
+
+  .op-pill .op-desc {
+    font-size: 0.7rem;
+    color: var(--ink-dim);
+    margin-top: 0.2rem;
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+  }
+
+  .search-link {
+    color: #7ab8f5;
+    text-decoration: none;
+    font-size: 0.72rem;
+    font-family: 'Share Tech Mono', monospace;
+    display: inline-block;
+    margin-top: 0.5rem;
+    letter-spacing: 0.05em;
+    transition: color 0.15s;
+  }
+  .search-link:hover { color: var(--gold-bright); }
+
+  footer {
+    text-align: center;
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--gold-dim);
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 0.82rem;
+    color: var(--ink-dim);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section { animation: fadeIn 0.4s ease both; }
+  .section:nth-child(2) { animation-delay: 0.05s; }
+  .section:nth-child(3) { animation-delay: 0.1s; }
+  .section:nth-child(4) { animation-delay: 0.15s; }
+  .section:nth-child(5) { animation-delay: 0.2s; }
+  .section:nth-child(6) { animation-delay: 0.25s; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="title">Theologia Operatorum</div>
+    <div class="subtitle">A Compendium of Google Dorking Commands for the Theological Scholar</div>
+  </header>
+
+  <p class="intro">
+    These search incantations, when spoken to the engine of Google, shall reveal<br>
+    hidden manuscripts, sacred texts, and scholarly disputations.
+  </p>
+
+  <!-- OPERATOR REFERENCE -->
+  <div class="section">
+    <div class="section-title">Core Operators</div>
+    <div class="operators-grid">
+      <div class="op-pill"><div class="op-name">filetype:</div><div class="op-desc">Restrict to file type</div></div>
+      <div class="op-pill"><div class="op-name">site:</div><div class="op-desc">Search one domain</div></div>
+      <div class="op-pill"><div class="op-name">intitle:</div><div class="op-desc">Word in page title</div></div>
+      <div class="op-pill"><div class="op-name">inurl:</div><div class="op-desc">Word in URL</div></div>
+      <div class="op-pill"><div class="op-name">intext:</div><div class="op-desc">Word in body text</div></div>
+      <div class="op-pill"><div class="op-name">"quotes"</div><div class="op-desc">Exact phrase match</div></div>
+      <div class="op-pill"><div class="op-name">-word</div><div class="op-desc">Exclude a term</div></div>
+      <div class="op-pill"><div class="op-name">OR</div><div class="op-desc">Either term</div></div>
+    </div>
+  </div>
+
+  <!-- PDF HUNTING -->
+  <div class="section">
+    <div class="section-title">Sacred Document Retrieval · PDFs & Texts</div>
+    <div class="cards">
+
+      <div class="card">
+        <div class="card-label">Patristic Writings</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">filetype:</span><span class="val">pdf</span> <span class="term">"church fathers"</span> <span class="op">intitle:</span><span class="val">patristics</span>
+        </div>
+        <div class="desc">Unearths PDFs of early Church Father writings — Origen, Tertullian, Augustine, Chrysostom.</div>
+        <a class="search-link" href='https://www.google.com/search?q=filetype%3Apdf+"church+fathers"+intitle%3Apartristics' target="_blank">↗ Open in Google</a>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Systematic Theology Textbooks</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">filetype:</span><span class="val">pdf</span> <span class="term">"systematic theology"</span> <span class="op">-</span><span class="val">site:amazon.com</span>
+        </div>
+        <div class="desc">Finds systematic theology PDFs excluding Amazon product pages.</div>
+        <a class="search-link" href='https://www.google.com/search?q=filetype%3Apdf+"systematic+theology"+-site%3Aamazon.com' target="_blank">↗ Open in Google</a>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Biblical Commentaries</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">filetype:</span><span class="val">pdf</span> <span class="term">"commentary on"</span> (<span class="term">"Romans"</span> OR <span class="term">"Genesis"</span> OR <span class="term">"Psalms"</span>)
+        </div>
+        <div class="desc">Retrieves PDF commentaries on specific biblical books. Swap book names as needed.</div>
+        <a class="search-link" href='https://www.google.com/search?q=filetype%3Apdf+"commentary+on"+(%22Romans%22+OR+%22Genesis%22+OR+%22Psalms%22)' target="_blank">↗ Open in Google</a>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Dead Sea Scrolls & Apocrypha</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">filetype:</span><span class="val">pdf</span> (<span class="term">"Dead Sea Scrolls"</span> OR <span class="term">"apocrypha"</span> OR <span class="term">"pseudepigrapha"</span>)
+        </div>
+        <div class="desc">Surfaces scholarly PDFs on deuterocanonical and non-canonical texts.</div>
+        <a class="search-link" href='https://www.google.com/search?q=filetype%3Apdf+(%22Dead+Sea+Scrolls%22+OR+%22apocrypha%22+OR+%22pseudepigrapha%22)' target="_blank">↗ Open in Google</a>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Reformation Treatises</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">filetype:</span><span class="val">pdf</span> (<span class="term">"Luther"</span> OR <span class="term">"Calvin"</span> OR <span class="term">"Zwingli"</span>) <span class="term">"theology"</span>
+        </div>
+        <div class="desc">Locates Reformation-era theological PDFs from Luther, Calvin, Zwingli and contemporaries.</div>
+        <a class="search-link" href='https://www.google.com/search?q=filetype%3Apdf+(%22Luther%22+OR+%22Calvin%22+OR+%22Zwingli%22)+"theology"' target="_blank">↗ Open in Google</a>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Islamic Theology (Kalam)</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">filetype:</span><span class="val">pdf</span> (<span class="term">"kalam"</span> OR <span class="term">"tawhid"</span> OR <span class="term">"aqidah"</span>) <span class="term">"theology"</span>
+        </div>
+        <div class="desc">Finds PDFs on Islamic theological concepts — divine unity, creed, scholastic theology.</div>
+        <a class="search-link" href='https://www.google.com/search?q=filetype%3Apdf+(%22kalam%22+OR+%22tawhid%22+OR+%22aqidah%22)+"theology"' target="_blank">↗ Open in Google</a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ACADEMIC REPOSITORIES -->
+  <div class="section">
+    <div class="section-title">Academic Repositories & Seminary Libraries</div>
+    <div class="cards">
+
+      <div class="card">
+        <div class="card-label">JSTOR Theology Articles</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">site:</span><span class="site-op">jstor.org</span> <span class="term">"soteriology"</span> OR <span class="term">"ecclesiology"</span> OR <span class="term">"eschatology"</span>
+        </div>
+        <div class="desc">Queries JSTOR's journal archive for core theological loci articles.</div>
+        <a class="search-link" href='https://www.google.com/search?q=site%3Ajstor.org+"soteriology"+OR+"ecclesiology"+OR+"eschatology"' target="_blank">↗ Open in Google</a>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Academia.edu Theology Papers</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">site:</span><span class="site-op">academia.edu</span> <span class="op">filetype:</span><span class="val">pdf</span> <span class="term">"christology"</span>
+        </div>
+        <div class="desc">Finds uploaded academic papers on Christology directly on Academia.edu.</div>
+        <a class="search-link" href='https://www.google.com/search?q=site%3Aacademia.edu+filetype%3Apdf+"christology"' target="_blank">↗ Open in Google</a>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Seminary Lecture Notes</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">site:</span><span class="site-op">.edu</span> <span class="op">filetype:</span><span class="val">pdf</span> <span class="term">"lecture notes"</span> <span class="term">"theology"</span>
+        </div>
+        <div class="desc">Surfaces theology lecture notes from university and seminary .edu domains.</div>
+        <a class="search-link" href='https://www.google.com/search?q=site%3A.edu+filetype%3Apdf+"lecture+notes"+"theology"' target="_blank">↗ Open in Google</a>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Open Dissertations</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">site:</span><span class="site-op">.edu</span> <span class="op">filetype:</span><span class="val">pdf</span> <span class="term">"doctoral dissertation"</span> <span class="term">"hermeneutics"</span>
+        </div>
+        <div class="desc">Locates open-access doctoral dissertations on hermeneutics at academic institutions.</div>
+        <a class="search-link" href='https://www.google.com/search?q=site%3A.edu+filetype%3Apdf+"doctoral+dissertation"+"hermeneutics"' target="_blank">↗ Open in Google</a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ANCIENT LANGUAGES -->
+  <div class="section">
+    <div class="section-title">Ancient Languages & Critical Texts</div>
+    <div class="cards">
+
+      <div class="card">
+        <div class="card-label">Greek New Testament Resources</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">filetype:</span><span class="val">pdf</span> <span class="term">"Greek New Testament"</span> OR <span class="term">"koine Greek"</span> <span class="term">"lexicon"</span>
+        </div>
+        <div class="desc">Finds Greek NT lexicons, parsing guides, and interlinears in PDF format.</div>
+        <a class="search-link" href='https://www.google.com/search?q=filetype%3Apdf+"Greek+New+Testament"+OR+"koine+Greek"+"lexicon"' target="_blank">↗ Open in Google</a>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Hebrew Bible / OT Scholarship</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">filetype:</span><span class="val">pdf</span> <span class="term">"Biblical Hebrew"</span> (<span class="term">"grammar"</span> OR <span class="term">"syntax"</span> OR <span class="term">"exegesis"</span>)
+        </div>
+        <div class="desc">Retrieves Hebrew grammar texts and Old Testament exegesis PDFs.</div>
+        <a class="search-link" href='https://www.google.com/search?q=filetype%3Apdf+"Biblical+Hebrew"+("grammar"+OR+"syntax"+OR+"exegesis")' target="_blank">↗ Open in Google</a>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Septuagint Studies</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">filetype:</span><span class="val">pdf</span> <span class="term">"Septuagint"</span> (<span class="term">"LXX"</span> OR <span class="term">"translation"</span> OR <span class="term">"textual criticism"</span>)
+        </div>
+        <div class="desc">Uncovers scholarly work on the Greek OT translation and its textual tradition.</div>
+        <a class="search-link" href='https://www.google.com/search?q=filetype%3Apdf+"Septuagint"+("LXX"+OR+"translation"+OR+"textual+criticism")' target="_blank">↗ Open in Google</a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TRADITION-SPECIFIC -->
+  <div class="section">
+    <div class="section-title">By Tradition & Denomination</div>
+    <div class="cards">
+
+      <div class="card">
+        <div class="card-label">Catholic Magisterium</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">site:</span><span class="site-op">vatican.va</span> <span class="op">filetype:</span><span class="val">pdf</span> <span class="term">"encyclical"</span>
+        </div>
+        <div class="desc">Searches the Vatican's own domain for official papal encyclical documents.</div>
+        <a class="search-link" href='https://www.google.com/search?q=site%3Avatican.va+filetype%3Apdf+"encyclical"' target="_blank">↗ Open in Google</a>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Eastern Orthodox Texts</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">filetype:</span><span class="val">pdf</span> (<span class="term">"theosis"</span> OR <span class="term">"hesychasm"</span> OR <span class="term">"Philokalia"</span> OR <span class="term">"Palamas"</span>)
+        </div>
+        <div class="desc">Surfaces Eastern Orthodox mystical theology, deification, and hesychast spirituality texts.</div>
+        <a class="search-link" href='https://www.google.com/search?q=filetype%3Apdf+(%22theosis%22+OR+%22hesychasm%22+OR+%22Philokalia%22+OR+%22Palamas%22)' target="_blank">↗ Open in Google</a>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Liberation Theology</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">filetype:</span><span class="val">pdf</span> <span class="term">"liberation theology"</span> (<span class="term">"Gutierrez"</span> OR <span class="term">"preferential option"</span> OR <span class="term">"base communities"</span>)
+        </div>
+        <div class="desc">Retrieves primary and secondary texts from the Latin American liberation theology movement.</div>
+        <a class="search-link" href='https://www.google.com/search?q=filetype%3Apdf+"liberation+theology"+("Gutierrez"+OR+"preferential+option"+OR+"base+communities")' target="_blank">↗ Open in Google</a>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Reformed & Calvinist Confessions</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">filetype:</span><span class="val">pdf</span> (<span class="term">"Westminster Confession"</span> OR <span class="term">"Heidelberg Catechism"</span> OR <span class="term">"Belgic Confession"</span>)
+        </div>
+        <div class="desc">Locates the classic Reformed confessional standards in PDF format with commentary.</div>
+        <a class="search-link" href='https://www.google.com/search?q=filetype%3Apdf+("Westminster+Confession"+OR+"Heidelberg+Catechism"+OR+"Belgic+Confession")' target="_blank">↗ Open in Google</a>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Mysticism & Contemplative Theology</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">filetype:</span><span class="val">pdf</span> (<span class="term">"Meister Eckhart"</span> OR <span class="term">"Pseudo-Dionysius"</span> OR <span class="term">"apophatic theology"</span> OR <span class="term">"via negativa"</span>)
+        </div>
+        <div class="desc">Surfaces mystical theology texts — negative theology, divine darkness, the apophatic tradition.</div>
+        <a class="search-link" href='https://www.google.com/search?q=filetype%3Apdf+(%22Meister+Eckhart%22+OR+%22Pseudo-Dionysius%22+OR+%22apophatic+theology%22+OR+%22via+negativa%22)' target="_blank">↗ Open in Google</a>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Jewish Theology & Midrash</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">filetype:</span><span class="val">pdf</span> (<span class="term">"Midrash"</span> OR <span class="term">"Talmudic theology"</span> OR <span class="term">"Jewish mysticism"</span> OR <span class="term">"Kabbalah"</span>)
+        </div>
+        <div class="desc">Finds PDFs on rabbinic theology, Midrashic literature, Kabbalah, and Jewish thought.</div>
+        <a class="search-link" href='https://www.google.com/search?q=filetype%3Apdf+("Midrash"+OR+"Talmudic+theology"+OR+"Jewish+mysticism"+OR+"Kabbalah")' target="_blank">↗ Open in Google</a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ADVANCED COMBINATIONS -->
+  <div class="section">
+    <div class="section-title">Advanced Combinations</div>
+    <div class="cards">
+
+      <div class="card">
+        <div class="card-label">Course Syllabi from Seminaries</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">site:</span><span class="site-op">.edu</span> <span class="op">filetype:</span><span class="val">pdf</span> <span class="term">"syllabus"</span> <span class="term">"theology"</span> <span class="op">inurl:</span><span class="val">seminary</span>
+        </div>
+        <div class="desc">Locates seminary course syllabi — excellent for finding curated reading lists and sources.</div>
+        <a class="search-link" href='https://www.google.com/search?q=site%3A.edu+filetype%3Apdf+"syllabus"+"theology"+inurl%3Aseminary' target="_blank">↗ Open in Google</a>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Open Bible Software Datasets</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">site:</span><span class="site-op">github.com</span> (<span class="term">"Bible"</span> OR <span class="term">"scripture"</span>) <span class="term">"theology"</span> <span class="op">filetype:</span><span class="val">json</span> OR <span class="op">filetype:</span><span class="val">xml</span>
+        </div>
+        <div class="desc">Finds open-source theological data sets, Bible APIs, and structured scripture resources.</div>
+        <a class="search-link" href='https://www.google.com/search?q=site%3Agithub.com+("Bible"+OR+"scripture")+"theology"+filetype%3Ajson+OR+filetype%3Axml' target="_blank">↗ Open in Google</a>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Philosophy of Religion Papers</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">site:</span><span class="site-op">philpapers.org</span> <span class="term">"philosophy of religion"</span> <span class="term">"divine simplicity"</span> OR <span class="term">"theodicy"</span>
+        </div>
+        <div class="desc">Queries PhilPapers for analytic philosophy of religion papers on theodicy and divine attributes.</div>
+        <a class="search-link" href='https://www.google.com/search?q=site%3Aphilpapers.org+"philosophy+of+religion"+"divine+simplicity"+OR+"theodicy"' target="_blank">↗ Open in Google</a>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Internet Archive Theology Books</div>
+        <div class="command" onclick="copyCmd(this)">
+          <button class="copy-btn">COPY</button>
+          <span class="op">site:</span><span class="site-op">archive.org</span> <span class="op">intitle:</span><span class="val">"theology"</span> <span class="op">-</span><span class="val">inurl:stream</span>
+        </div>
+        <div class="desc">Surfaces full theology books available on the Internet Archive, excluding stream-only pages.</div>
+        <a class="search-link" href='https://www.google.com/search?q=site%3Aarchive.org+intitle%3A"theology"+-inurl%3Astream' target="_blank">↗ Open in Google</a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TIP BOX -->
+  <div class="tip-box">
+    <div class="tip-title">✦ Scribal Counsel</div>
+    <p>
+      Combine operators freely: <code>filetype:pdf site:.edu "pneumatology" -filetype:doc</code> sharpens results considerably. 
+      For rare texts, try <code>intext:"rare" OR "manuscript"</code> alongside your terms. 
+      The <code>OR</code> operator must be capitalized. Parentheses group alternatives: <code>("term1" OR "term2")</code>. 
+      Add a year range using <code>after:2010 before:2023</code> for recent scholarship.
+    </p>
+  </div>
+
+  <footer>
+    Seek and ye shall find · These commands open freely accessible documents only · Always cite thy sources
+  </footer>
+
+</div>
+
+<script>
+  function copyCmd(el) {
+    const text = el.innerText.replace('COPY', '').trim();
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = el.querySelector('.copy-btn');
+      btn.textContent = 'COPIED';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1500);
+    });
+  }
+</script>
+</body>
+</html>
